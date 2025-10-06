@@ -1,0 +1,53 @@
+import pandas as pd
+import yfinance as yf
+
+# Initialize portfolio as an empty DataFrame
+portfolio = pd.DataFrame(columns=["Symbol", "Shares", "Buy Price", "Current Price", "Value", "Profit/Loss"])
+
+def add_stock(symbol, shares, buy_price):
+    """Add a stock to your portfolio."""
+    global portfolio
+    data = {
+        "Symbol": symbol.upper(),
+        "Shares": shares,
+        "Buy Price": buy_price,
+        "Current Price": 0,
+        "Value": 0,
+        "Profit/Loss": 0
+    }
+    portfolio = pd.concat([portfolio, pd.DataFrame([data])], ignore_index=True)
+    print(f"✅ Added {shares} shares of {symbol.upper()} at ${buy_price:.2f}")
+
+def update_prices():
+    """Fetch the latest prices using Yahoo Finance."""
+    global portfolio
+    for i in range(len(portfolio)):
+        symbol = portfolio.loc[i, "Symbol"]
+        try:
+            current_price = yf.Ticker(symbol).history(period="1d")["Close"].iloc[-1]
+            portfolio.loc[i, "Current Price"] = current_price
+            portfolio.loc[i, "Value"] = current_price * portfolio.loc[i, "Shares"]
+            portfolio.loc[i, "Profit/Loss"] = (current_price - portfolio.loc[i, "Buy Price"]) * portfolio.loc[i, "Shares"]
+        except Exception as e:
+            print(f"⚠️ Could not fetch data for {symbol}: {e}")
+
+def show_portfolio():
+    """Display the portfolio summary."""
+    global portfolio
+    total_value = portfolio["Value"].sum()
+    total_profit = portfolio["Profit/Loss"].sum()
+    print("\n📊 Current Portfolio:")
+    print(portfolio.round(2))
+    print("\n💰 Total Portfolio Value: $", round(total_value, 2))
+    print("📈 Total Profit/Loss: $", round(total_profit, 2))
+
+# -------------------------------
+# Example usage
+# -------------------------------
+add_stock("AAPL", 10, 170.00)
+add_stock("MSFT", 5, 330.00)
+add_stock("TSLA", 3, 240.00)
+
+print("\n⏳ Updating stock prices...\n")
+update_prices()
+show_portfolio()
